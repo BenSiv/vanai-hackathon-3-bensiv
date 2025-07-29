@@ -57,7 +57,7 @@ def main():
 
     CREATE TABLE Responses (
         response_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        respondent_code TEXT,
+        respondent_id TEXT,
         question_id INTEGER,
         answer_option_id INTEGER,
         open_ended_text TEXT,
@@ -98,9 +98,9 @@ def main():
     for col in df.select_dtypes(include=['object']).columns:
         df[col] = df[col].fillna("")
 
-    # Use DataFrame index as respondent_code (string)
+    # Use DataFrame index as respondent_id (string)
     for idx, row in df.iterrows():
-        respondent_code = str(idx)
+        respondent_id = str(idx)
 
         for col in df.columns:
             # Expect columns like Q1, Q1_OE, Q5_1, Q5_Healthcare, etc.
@@ -139,15 +139,15 @@ def main():
                         matched_aid = option_lookup.get((q_code, val))
                     if matched_aid:
                         cur.execute(
-                            "INSERT INTO Responses (respondent_code, question_id, answer_option_id) VALUES (?, ?, ?)",
-                            (respondent_code, qid, matched_aid)
+                            "INSERT INTO Responses (respondent_id, question_id, answer_option_id) VALUES (?, ?, ?)",
+                            (respondent_id, qid, matched_aid)
                         )
             elif q_type == "single_choice":
                 aid = option_lookup.get((q_code, val))
                 if aid:
                     cur.execute(
-                        "INSERT INTO Responses (respondent_code, question_id, answer_option_id) VALUES (?, ?, ?)",
-                        (respondent_code, qid, aid)
+                        "INSERT INTO Responses (respondent_id, question_id, answer_option_id) VALUES (?, ?, ?)",
+                        (respondent_id, qid, aid)
                     )
             elif q_type == "open_end" or is_open_end_col:
                 if val != "" and not (isinstance(val, float) and math.isnan(val)) and val.lower() != "nan":
@@ -156,8 +156,8 @@ def main():
                     text_to_insert = None
 
                 cur.execute(
-                    "INSERT INTO Responses (respondent_code, question_id, open_ended_text) VALUES (?, ?, ?)",
-                    (respondent_code, qid, text_to_insert)
+                    "INSERT INTO Responses (respondent_id, question_id, open_ended_text) VALUES (?, ?, ?)",
+                    (respondent_id, qid, text_to_insert)
                 )
 
     conn.commit()

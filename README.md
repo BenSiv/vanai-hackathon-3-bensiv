@@ -4,11 +4,10 @@
 
 ## TODO
 
-- [ ] Explore dataset  
-- [ ] Find field relationships  
+- [V] Explore dataset  
 - [V] Break dataset into structured database  
-- [ ] Raise questions that may be answered using the data  
-- [ ] Extract insights from data  
+- [V] Raise questions that may be answered using the data  
+- [V] Extract insights from data  
 - [ ] Raise product idea based on the knowledge learned  
 - [ ] Build product  
 - [ ] Present product  
