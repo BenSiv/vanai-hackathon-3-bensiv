@@ -2,10 +2,20 @@ import sqlite3
 import pandas as pd
 import re
 import math
+import logging
 
 QUESTIONS_MD = "data/questions.md"
 ANSWERS_CSV = "data/answers.csv"
 DB_FILE = "data/ai_survey.db"
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    handlers=[
+        logging.FileHandler("data/build_db.log")
+    ]
+)
 
 def parse_questions_md(filepath):
     questions = {}
@@ -16,9 +26,9 @@ def parse_questions_md(filepath):
     for line in lines:
         line = line.strip()
         if line.startswith("## Q"):
-            # New question block start
             current_q = line[3:].strip()  # e.g. "Q1"
             questions[current_q] = {"text": "", "type": "", "options": []}
+            logging.info(f"Found question block: {current_q}")
         elif current_q:
             if line.startswith("question:"):
                 questions[current_q]["text"] = line[len("question:"):].strip()
@@ -27,12 +37,15 @@ def parse_questions_md(filepath):
             elif line.startswith("- "):
                 option = line[2:].strip()
                 questions[current_q]["options"].append(option)
+    logging.info(f"Parsed {len(questions)} questions from markdown.")
     return questions
 
 def main():
-    # Connect and create tables
+    logging.info("Connecting to SQLite database...")
     conn = sqlite3.connect(DB_FILE)
     cur = conn.cursor()
+
+    logging.info("Creating tables...")
     cur.executescript("""
     DROP TABLE IF EXISTS Respondents;
     DROP TABLE IF EXISTS Questions;
@@ -66,13 +79,12 @@ def main():
     );
     """)
 
-    # Parse questions.md
     questions = parse_questions_md(QUESTIONS_MD)
 
     question_code_to_id = {}
     option_lookup = {}
 
-    # Insert Questions and AnswerOptions
+    logging.info("Inserting questions and answer options into database...")
     for q_code, q in questions.items():
         cur.execute(
             "INSERT INTO Questions (question_code, question_text, question_type) VALUES (?, ?, ?)",
@@ -80,9 +92,11 @@ def main():
         )
         qid = cur.lastrowid
         question_code_to_id[q_code] = qid
+
+        if q["options"]:
+            logging.info(f"Inserting {len(q['options'])} options for question {q_code}...")
         for opt in q["options"]:
             is_other = 1 if "other" in opt.lower() else 0
-            # Use option text as option_code for simplicity
             cur.execute(
                 "INSERT INTO AnswerOptions (question_id, option_text, option_code, is_other) VALUES (?, ?, ?, ?)",
                 (qid, opt, opt, is_other)
@@ -91,19 +105,23 @@ def main():
             option_lookup[(q_code, opt)] = aid
 
     conn.commit()
+    logging.info("Questions and options inserted.")
 
-    # Load answers.csv
+    logging.info("Loading responses CSV...")
     df = pd.read_csv(ANSWERS_CSV)
-    # Fill NaN only in object columns, avoiding dtype warnings
     for col in df.select_dtypes(include=['object']).columns:
         df[col] = df[col].fillna("")
 
-    # Use DataFrame index as respondent_id (string)
+    logging.info(f"Processing {len(df)} respondents' answers...")
+
+    inserted_count = 0
+    skipped_count = 0
+    batch_size = 500
+
     for idx, row in df.iterrows():
         respondent_id = str(idx)
 
         for col in df.columns:
-            # Expect columns like Q1, Q1_OE, Q5_1, Q5_Healthcare, etc.
             m = re.match(r"(Q\d+)(_OE)?(_.*)?", col)
             if not m:
                 continue
@@ -120,12 +138,10 @@ def main():
             val = str(row[col]).strip()
 
             if val == "":
+                skipped_count += 1
                 continue
 
             if q_type == "multi_choice":
-                # Multi-choice columns might be:
-                # - one per option (like Q5_Healthcare)
-                # - values: 1, true, checked, yes etc. mean selected
                 if val.lower() in ["1", "true", "checked", "yes"]:
                     matched_aid = None
                     suffix_key = suffix.lstrip("_").lower()
@@ -134,7 +150,6 @@ def main():
                             matched_aid = option_lookup.get((q_code, opt_text))
                             if matched_aid:
                                 break
-                    # fallback: if suffix doesn't match, try matching full val as option text
                     if not matched_aid and val in [opt for opt in questions[q_code]["options"]]:
                         matched_aid = option_lookup.get((q_code, val))
                     if matched_aid:
@@ -142,6 +157,7 @@ def main():
                             "INSERT INTO Responses (respondent_id, question_id, answer_option_id) VALUES (?, ?, ?)",
                             (respondent_id, qid, matched_aid)
                         )
+                        inserted_count += 1
             elif q_type == "single_choice":
                 aid = option_lookup.get((q_code, val))
                 if aid:
@@ -149,6 +165,7 @@ def main():
                         "INSERT INTO Responses (respondent_id, question_id, answer_option_id) VALUES (?, ?, ?)",
                         (respondent_id, qid, aid)
                     )
+                    inserted_count += 1
             elif q_type == "open_end" or is_open_end_col:
                 if val != "" and not (isinstance(val, float) and math.isnan(val)) and val.lower() != "nan":
                     text_to_insert = val
@@ -159,11 +176,17 @@ def main():
                     "INSERT INTO Responses (respondent_id, question_id, open_ended_text) VALUES (?, ?, ?)",
                     (respondent_id, qid, text_to_insert)
                 )
+                inserted_count += 1
+
+        if (idx + 1) % batch_size == 0:
+            conn.commit()
+            logging.info(f"Processed {idx + 1} respondents so far...")
 
     conn.commit()
+    logging.info(f"Finished processing. Inserted {inserted_count} responses, skipped {skipped_count} empty values.")
     conn.close()
 
-    print(f"SQLite database '{DB_FILE}' has been created and populated.")
+    logging.info(f"SQLite database '{DB_FILE}' has been created and populated.")
 
 if __name__ == "__main__":
     main()
