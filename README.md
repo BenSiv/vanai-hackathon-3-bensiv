@@ -43,6 +43,8 @@ The app aims to:
 
 This product bridges the gap between complex AI technologies and user needs, making AI accessible, relatable, and actionable.
 
+![AI Navigator Demo](docs/demo.gif)
+
 ---
 
 ## Next Steps
