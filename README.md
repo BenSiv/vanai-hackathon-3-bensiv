@@ -13,16 +13,20 @@ This project focuses on analyzing a comprehensive AI survey dataset. I structure
 ## Progress So Far
 
 - **Dataset Exploration:**  
-  I began by exploring the dataset to understand its structure, key variables, and response patterns.
+  I explored the dataset to understand its structure, key variables, and response patterns.
 
 - **Database Construction:**  
-  I cleaned the raw CSV survey data and imported it into a SQLite database (`data/ai_survey.db`) to enable more efficient querying and analysis.
+  I cleaned the raw CSV survey data and imported it into a SQLite database (`data/ai_survey.db`) for efficient querying and analysis.
 
 - **Research Questions Formulation:**  
   I identified relevant questions that the dataset can help answer, such as trends in AI adoption, sentiment analysis, and demographic influences.
 
 - **Insights Extraction:**  
   Using Python scripts and language models, I analyzed open-ended responses, summarized common themes, and generated word clouds (`plot/wordcloud_all_open_ended.png` and `plot/wordcloud_summary.png`).
+
+- **Proof of Concept App Development:**  
+  I developed an initial interactive AI Navigator app as a proof of concept using Python and Flask. The app helps users explore AI innovations, discover relevant AI tools, and addresses common misconceptions through a myth-busting FAQ.  
+  The app is containerized with Podman, ensuring easy deployment and access via mapped ports.
 
 ---
 
@@ -37,13 +41,13 @@ The app aims to:
 - Personalize guidance to help users find AI tools and technologies relevant to their industry, role, or project goals.  
 - Enable actionable insights so users can adopt AI solutions effectively and with confidence.
 
-This product will bridge the gap between complex AI technologies and user needs, making AI accessible, relatable, and actionable.
+This product bridges the gap between complex AI technologies and user needs, making AI accessible, relatable, and actionable.
 
 ---
 
 ## Next Steps
 
-- Complete detailed product documentation and design (`docs/product.md`).  
-- Develop the AI Navigator app focused on user experience and personalized guidance.  
-- Automate data updates and refresh insights continuously.  
+- Enhance the AI Navigator app with richer interactivity, personalized recommendations, and integration of survey insights.  
+- Expand the app’s content with curated learning resources and community stories to further alleviate fears around AI adoption.  
+- Develop a robust containerization and deployment strategy for easy scaling and sharing.  
 - Prepare the final presentation and submit the project.
