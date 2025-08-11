@@ -51,5 +51,4 @@ This product bridges the gap between complex AI technologies and user needs, mak
 
 - Enhance the AI Navigator app with richer interactivity, personalized recommendations, and integration of survey insights.  
 - Expand the app’s content with curated learning resources and community stories to further alleviate fears around AI adoption.  
-- Develop a robust containerization and deployment strategy for easy scaling and sharing.  
-- Prepare the final presentation and submit the project.
+- Develop a robust containerization and deployment strategy for easy scaling and sharing.
